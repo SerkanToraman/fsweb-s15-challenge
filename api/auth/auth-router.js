@@ -1,7 +1,13 @@
 const router = require('express').Router();
+const bcrypt = require('bcryptjs');
+const jwt = require("jsonwebtoken");
+const {JWT_SECRET,HASHCOUNT} =require('../../config')
 
-router.post('/register', (req, res) => {
-  res.end('kayıt olmayı ekleyin, lütfen!');
+const {mwUserNameVarmiLogin,mwCheckUsernamePasswordExist,mwCheckPayload} = require('./auth-middleware')
+const authModel = require('./auth-model')
+
+router.post('/register', mwCheckUsernamePasswordExist,async (req, res,next) => {
+  //res.end('kayıt olmayı ekleyin, lütfen!');
   /*
     EKLEYİN
     Uçnoktanın işlevselliğine yardımcı olmak için middlewarelar yazabilirsiniz.
@@ -27,10 +33,23 @@ router.post('/register', (req, res) => {
     4- Kullanıcı adı alınmışsa BAŞARISIZ kayıtta,
       şu mesajı içermelidir: "username alınmış".
   */
+
+  try {
+    const insertedUserData ={
+      username : req.body.username,
+      password : req.body.password,
+    }
+    insertedUserData.password = bcrypt.hashSync(insertedUserData.password,HASHCOUNT)
+    const insertedUser = await authModel.insertUser(insertedUserData)
+    res.status(201).json(insertedUser)
+  } catch (error) {
+    next();
+  }
+  
 });
 
-router.post('/login', (req, res) => {
-  res.end('girişi ekleyin, lütfen!');
+router.post('/login',mwCheckPayload,mwUserNameVarmiLogin, (req, res) => {
+  //res.end('girişi ekleyin, lütfen!');
   /*
     EKLEYİN
     Uçnoktanın işlevselliğine yardımcı olmak için middlewarelar yazabilirsiniz.
@@ -54,6 +73,18 @@ router.post('/login', (req, res) => {
     4- "username" db de yoksa ya da "password" yanlışsa BAŞARISIZ giriş,
       şu mesajı içermelidir: "geçersiz kriterler".
   */
+      try {
+        const payload ={
+          username : req.userData.username,
+          password : req.userData.password,
+        }
+        const token = jwt.sign(payload,JWT_SECRET,{expiresIn:"24h"});
+        res.json({message: `Welcome, ${req.userData.username}`,
+        token:token}) 
+      } catch (error) {
+        next();
+      }    
 });
+
 
 module.exports = router;
