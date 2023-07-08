@@ -4,9 +4,9 @@ const {JWT_SECRET,HASHCOUNT} =require('../../config')
 
 const authModel = require('./auth-model')
 
-const mwCheckUsernamePasswordExist = async (req,res,next) => {
+const mwCheckUsernamePasswordRolenameValid = async (req,res,next) => {
   try {
-    let {username,password}=req.body;
+    let {username,password,rolename}=req.body;
       if(username){
         username = username.trim();
         let isUserExist = await authModel.getByUsername(username);
@@ -15,7 +15,7 @@ const mwCheckUsernamePasswordExist = async (req,res,next) => {
         }else if(username.length>32){
           res.status(422).json({message:"Username cannot be longer than 32 letters"})
         }else{
-          req.body.username=username;
+          req.username=username;
         }
       }else{
         res.status(400).json({messsage:"Please enter a user name"}); 
@@ -26,15 +26,28 @@ const mwCheckUsernamePasswordExist = async (req,res,next) => {
         if(password.length<8){
           res.status(422).json({message:"Password cannot be shorter than 8 Characters"})
         }else{
-          req.body.password=password;
-          next()
+          req.password=password;
         }
       }else{
         res.status(400).json({messsage:"Please enter a valid password"}); 
       }
+      if(rolename){
+        rolename=rolename.trim();
+        if(rolename==="admin"){
+          res.status(422).json({message:"Rolename cannot be admin"})
+        }else if(rolename.length>32){
+          res.status(422).json({message:"Rolename cannot be longer than 32 Characters"})
+        }else{
+          req.rolename=rolename;
+          next();
+        }
+      }else{
+          req.rolename ="user"
+          next();
+      }
 
   } catch (error) {
-    next();
+    next(error);
   }
 }
 
@@ -61,7 +74,6 @@ const mwUserNameVarmiLogin = async (req,res,next) =>{
 }
 
 const mwCheckPayload = async (req,res,next) =>{
-  
   try {
     const {username,password}=req.body;
     if(username&&password){
@@ -75,10 +87,12 @@ const mwCheckPayload = async (req,res,next) =>{
     next(error)
   }
 }
+
+
   
 
 module.exports = {
-  mwCheckUsernamePasswordExist,
+  mwCheckUsernamePasswordRolenameValid,
   mwUserNameVarmiLogin,
   mwCheckPayload
 }

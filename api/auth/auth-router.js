@@ -3,10 +3,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require("jsonwebtoken");
 const {JWT_SECRET,HASHCOUNT} =require('../../config')
 
-const {mwUserNameVarmiLogin,mwCheckUsernamePasswordExist,mwCheckPayload} = require('./auth-middleware')
+const {mwUserNameVarmiLogin,mwCheckUsernamePasswordRolenameValid,mwCheckPayload} = require('./auth-middleware')
 const authModel = require('./auth-model')
 
-router.post('/register', mwCheckUsernamePasswordExist,async (req, res,next) => {
+router.post('/register', mwCheckUsernamePasswordRolenameValid,async (req, res,next) => {
   //res.end('kayıt olmayı ekleyin, lütfen!');
   /*
     EKLEYİN
@@ -36,8 +36,9 @@ router.post('/register', mwCheckUsernamePasswordExist,async (req, res,next) => {
 
   try {
     const insertedUserData ={
-      username : req.body.username,
-      password : req.body.password,
+      username : req.username,
+      password : req.password,
+      rolename : req.rolename,
     }
     insertedUserData.password = bcrypt.hashSync(insertedUserData.password,HASHCOUNT)
     const insertedUser = await authModel.insertUser(insertedUserData)
@@ -45,7 +46,6 @@ router.post('/register', mwCheckUsernamePasswordExist,async (req, res,next) => {
   } catch (error) {
     next();
   }
-  
 });
 
 router.post('/login',mwCheckPayload,mwUserNameVarmiLogin, (req, res) => {
@@ -77,6 +77,7 @@ router.post('/login',mwCheckPayload,mwUserNameVarmiLogin, (req, res) => {
         const payload ={
           username : req.userData.username,
           password : req.userData.password,
+          role_name: req.body.role_name,
         }
         const token = jwt.sign(payload,JWT_SECRET,{expiresIn:"24h"});
         res.json({message: `Welcome, ${req.userData.username}`,
