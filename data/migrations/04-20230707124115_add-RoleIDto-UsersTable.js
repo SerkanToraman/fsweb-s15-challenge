@@ -3,8 +3,8 @@
  * @returns { Promise<void> }
  */
 exports.up = function(knex) {
-  return knex.schema.alterTable('users',tbl=>{
-    tbl.integer('role_id')
+  return knex.schema.alterTable('users',users=>{
+    users.integer('role_id')
         .unsigned()
         .notNullable()
         .references('role_id')
